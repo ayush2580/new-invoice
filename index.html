@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Invoice Generator with WhatsApp</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>Inventory & Billing System</h1>
+  <button onclick="location.href='inventory.html'">Manage Inventory</button>
+  <button onclick="location.href='transactions.html'">Transaction History</button>
+  <button onclick="location.href='invoice.html'">Generate Invoice</button>
+
+  <h2>Invoice Generator</h2>
+  <form id="invoiceForm">
+    <input type="text" id="customerName" placeholder="Customer Name" required>
+    <input type="text" id="phone" placeholder="Phone (with country code, e.g. 91XXXXXXXXXX)" required>
+    <input type="text" id="product" placeholder="Product Name" required>
+    <input type="number" id="qty" placeholder="Quantity" required>
+    <input type="number" id="rate" placeholder="Rate" required>
+    <button type="submit">Generate & Send Invoice</button>
+  </form>
+
+  <script>
+    document.getElementById('invoiceForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      const name = document.getElementById('customerName').value;
+      const phone = document.getElementById('phone').value.replace('+', '');
+      const product = document.getElementById('product').value;
+      const qty = parseInt(document.getElementById('qty').value);
+      const rate = parseFloat(document.getElementById('rate').value);
+      const total = qty * rate;
+
+      const message = `Hi ${name}, thanks for your purchase.%0A%0AProduct: ${product}%0AQuantity: ${qty}%0ARate: ₹${rate}%0ATotal: ₹${total}%0A%0AThank you for shopping with us!`;
+      const whatsappUrl = `https://wa.me/${phone}?text=${message}`;
+
+      window.open(whatsappUrl, '_blank');
+    });
+  </script>
+</body>
+</html>
