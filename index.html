@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Invoice Generator with WhatsApp</title>
+  <title>Invoice Generator</title>
   <style>
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -14,7 +14,6 @@
       flex-direction: column;
       align-items: center;
     }
-
     h1 {
       background-color: #4CAF50;
       color: white;
@@ -24,12 +23,6 @@
       text-align: center;
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
-
-    h2 {
-      color: #333;
-      margin-top: 30px;
-    }
-
     button {
       background-color: #4CAF50;
       color: white;
@@ -41,11 +34,9 @@
       font-size: 16px;
       transition: background 0.3s ease;
     }
-
     button:hover {
       background-color: #45a049;
     }
-
     form {
       background-color: white;
       padding: 30px;
@@ -57,8 +48,7 @@
       display: flex;
       flex-direction: column;
     }
-
-    input {
+    input, select {
       padding: 12px;
       margin-bottom: 15px;
       border: 1px solid #ccc;
@@ -68,40 +58,104 @@
   </style>
 </head>
 <body>
-  <h1>Inventory & Billing System</h1>
+  <h1>Invoice Generator</h1>
 
   <div>
     <button onclick="location.href='inventory.html'">Manage Inventory</button>
     <button onclick="location.href='transactions.html'">Transaction History</button>
-    <button onclick="location.href='invoice.html'">Generate Invoice</button>
   </div>
 
-  <h2>Invoice Generator</h2>
   <form id="invoiceForm">
     <input type="text" id="customerName" placeholder="Customer Name" required>
-    <input type="text" id="phone" placeholder="Phone (with country code, e.g. 91XXXXXXXXXX)" required>
-    <input type="text" id="product" placeholder="Product Name" required>
+    <div style="display: flex; gap: 10px;">
+      <select id="countryCode" required>
+        <option value="91" selected>+91 (India)</option>
+        <option value="1">+1 (USA)</option>
+        <option value="44">+44 (UK)</option>
+        <option value="61">+61 (Australia)</option>
+        <option value="81">+81 (Japan)</option>
+        <option value="49">+49 (Germany)</option>
+        <option value="971">+971 (UAE)</option>
+      </select>
+      <input type="text" id="phone" placeholder="Phone Number (No country code)" required>
+    </div>
+    <select id="product" required></select>
     <input type="number" id="qty" placeholder="Quantity" required>
-    <input type="number" id="rate" placeholder="Rate" required>
+    <input type="number" id="rate" placeholder="Rate" required readonly>
     <button type="submit">Generate & Send Invoice</button>
   </form>
 
   <script>
-    document.getElementById('invoiceForm').addEventListener('submit', (e) => {
-      e.preventDefault();
+    const form = document.getElementById('invoiceForm');
+    const productSelect = document.getElementById('product');
+    const rateInput = document.getElementById('rate');
 
+    function loadInventory() {
+      const inventory = JSON.parse(localStorage.getItem('inventoryData')) || [];
+      productSelect.innerHTML = '<option value="" disabled selected>Select Product</option>';
+      inventory.forEach((item, index) => {
+        const option = document.createElement('option');
+        option.value = index;
+        option.textContent = `${item.name} (${item.qty} pcs)`;
+        productSelect.appendChild(option);
+      });
+    }
+
+    productSelect.addEventListener('change', () => {
+      const inventory = JSON.parse(localStorage.getItem('inventoryData')) || [];
+      const selected = inventory[productSelect.value];
+      if (selected) {
+        rateInput.value = selected.price;
+      }
+    });
+
+    form.addEventListener('submit', e => {
+      e.preventDefault();
       const name = document.getElementById('customerName').value;
-      const phone = document.getElementById('phone').value.replace('+', '');
-      const product = document.getElementById('product').value;
+      const code = document.getElementById('countryCode').value;
+      const phoneRaw = document.getElementById('phone').value.replace(/[^0-9]/g, '');
+      const phone = `${code}${phoneRaw}`;
+      const inventory = JSON.parse(localStorage.getItem('inventoryData')) || [];
+      const selectedIndex = productSelect.value;
+      const selected = inventory[selectedIndex];
       const qty = parseInt(document.getElementById('qty').value);
-      const rate = parseFloat(document.getElementById('rate').value);
+      const rate = parseFloat(rateInput.value);
       const total = qty * rate;
 
-      const message = `Hi ${name}, thanks for your purchase.%0A%0AProduct: ${product}%0AQuantity: ${qty}%0ARate: ₹${rate}%0ATotal: ₹${total}%0A%0AThank you for shopping with us!`;
-      const whatsappUrl = `https://wa.me/${phone}?text=${message}`;
+      if (!selected || qty > selected.qty) {
+        alert('Insufficient stock!');
+        return;
+      }
 
+      selected.qty -= qty;
+      inventory[selectedIndex] = selected;
+      localStorage.setItem('inventoryData', JSON.stringify(inventory));
+
+      const txn = {
+        date: new Date().toLocaleString(),
+        customer: name,
+        product: selected.name,
+        qty: qty,
+        rate: rate,
+        total: total
+      };
+      const transactions = JSON.parse(localStorage.getItem('transactionsData')) || [];
+      transactions.push(txn);
+      localStorage.setItem('transactionsData', JSON.stringify(transactions));
+
+      let revenue = parseFloat(localStorage.getItem('totalRevenue')) || 0;
+      revenue += total;
+      localStorage.setItem('totalRevenue', revenue);
+
+      const message = `Hi ${name}, thanks for your purchase.%0A%0AProduct: ${selected.name}%0AQuantity: ${qty}%0ARate: ₹${rate}%0ATotal: ₹${total}%0A%0AThank you for shopping with us!`;
+      const whatsappUrl = `https://wa.me/${phone}?text=${message}`;
       window.open(whatsappUrl, '_blank');
+      form.reset();
+      loadInventory();
     });
+
+    window.addEventListener('storage', loadInventory);
+    loadInventory();
   </script>
 </body>
 </html>
