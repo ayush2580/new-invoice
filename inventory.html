@@ -3,94 +3,188 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Inventory</title>
+  <title>Inventory Management</title>
   <style>
+    :root {
+      --bg: #f8f9fa;
+      --text: #333;
+      --card: #fff;
+      --accent: #4CAF50;
+    }
+    .dark {
+      --bg: #121212;
+      --text: #f1f1f1;
+      --card: #1e1e1e;
+      --accent: #81C784;
+    }
     body {
       font-family: Arial, sans-serif;
-      background-color: #f4f4f4;
-      margin: 0;
+      background: var(--bg);
+      color: var(--text);
       padding: 20px;
+      transition: background 0.3s, color 0.3s;
     }
     h1 {
-      text-align: center;
-      color: #4CAF50;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    #toggleDark {
+      appearance: none;
+      width: 40px;
+      height: 20px;
+      background: #ccc;
+      border-radius: 20px;
+      position: relative;
+      cursor: pointer;
+    }
+    #toggleDark:checked {
+      background: var(--accent);
+    }
+    #toggleDark::before {
+      content: "";
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      background: #fff;
+      border-radius: 50%;
+      top: 1px;
+      left: 1px;
+      transition: 0.3s;
+    }
+    #toggleDark:checked::before {
+      transform: translateX(20px);
     }
     table {
       width: 100%;
       border-collapse: collapse;
       margin-top: 20px;
-    }
-    table, th, td {
-      border: 1px solid #ddd;
+      background: var(--card);
+      box-shadow: 0 0 10px rgba(0, 0, 0, .05);
     }
     th, td {
-      padding: 12px;
+      padding: 10px;
+      border: 1px solid #ddd;
       text-align: center;
     }
     th {
-      background-color: #4CAF50;
-      color: white;
+      background: var(--accent);
+      color: #fff;
     }
-    form {
-      max-width: 500px;
-      margin: auto;
-      background: white;
-      padding: 20px;
-      border-radius: 10px;
-    }
-    input, button {
-      padding: 10px;
-      margin-top: 10px;
+    td input {
       width: 100%;
-      border: 1px solid #ccc;
-      border-radius: 5px;
+      border: none;
+      text-align: center;
+      background: transparent;
+      color: var(--text);
     }
     button {
-      background-color: #4CAF50;
-      color: white;
+      padding: 10px 15px;
+      margin-top: 20px;
+      margin-right: 10px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
       cursor: pointer;
+      border-radius: 4px;
     }
     button:hover {
-      background-color: #45a049;
+      background: #45a049;
     }
   </style>
 </head>
 <body>
-  <h1>Inventory Management</h1>
+  <h1>
+    Inventory
+    <input type="checkbox" id="toggleDark" title="Toggle dark mode">
+  </h1>
+    <div class="actions">
+    <button onclick="exportCSV()">Export Transactions CSV</button>
+    <p><a href="index.html">Back to Invoice Generator</a></p>
+  </div>
 
-  <form id="inventoryForm">
-    <input type="text" id="itemName" placeholder="Product Name" required>
-    <input type="number" id="itemQty" placeholder="Quantity" required>
-    <input type="number" id="itemPrice" placeholder="Price" required>
-    <button type="submit">Add Item</button>
-  </form>
 
   <table id="inventoryTable">
     <thead>
       <tr>
         <th>Product</th>
         <th>Quantity</th>
-        <th>Price</th>
+        <th>Price (₹)</th>
+        <th>Total Price (₹)</th>
+        <th>Action</th>
       </tr>
     </thead>
     <tbody></tbody>
   </table>
+  <div>
+    <button onclick="addProduct()">Add Product</button>
+    <button onclick="saveInventory()">Save Inventory</button>
+  </div>
 
   <script>
-    const form = document.getElementById('inventoryForm');
     const tableBody = document.querySelector('#inventoryTable tbody');
 
-    form.addEventListener('submit', e => {
-      e.preventDefault();
-      const name = document.getElementById('itemName').value;
-      const qty = document.getElementById('itemQty').value;
-      const price = document.getElementById('itemPrice').value;
+    function loadInventory() {
+      const data = JSON.parse(localStorage.getItem('inventoryData')) || [];
+      tableBody.innerHTML = '';
+      data.forEach((item, i) => {
+        const row = tableBody.insertRow();
+        row.innerHTML = `
+          <td><input value="${item.name}" data-index="${i}" data-field="name"></td>
+          <td><input type="number" value="${item.qty}" data-index="${i}" data-field="qty"></td>
+          <td><input type="number" value="${item.price}" data-index="${i}" data-field="price"></td>
+          <td><input type="text" value="₹${item.qty * item.price}" disabled></td>
+          <td><button onclick="removeProduct(${i})">Remove</button></td>
+        `;
+      });
+    }
 
-      const row = document.createElement('tr');
-      row.innerHTML = `<td>${name}</td><td>${qty}</td><td>₹${price}</td>`;
-      tableBody.appendChild(row);
+    function addProduct() {
+      const data = JSON.parse(localStorage.getItem('inventoryData')) || [];
+      data.push({ name: '', qty: 0, price: 0, total: 0 });
+      localStorage.setItem('inventoryData', JSON.stringify(data));
+      loadInventory();
+    }
 
-      form.reset();
+    function removeProduct(index) {
+      let data = JSON.parse(localStorage.getItem('inventoryData')) || [];
+      data.splice(index, 1);
+      localStorage.setItem('inventoryData', JSON.stringify(data));
+      loadInventory();
+    }
+
+    function saveInventory() {
+      const data = JSON.parse(localStorage.getItem('inventoryData')) || [];
+      const inputs = document.querySelectorAll('input');
+      inputs.forEach(input => {
+        const index = input.dataset.index;
+        const field = input.dataset.field;
+        if (index !== undefined && field) {
+          if (field === 'qty' || field === 'price') {
+            data[index][field] = parseFloat(input.value) || 0;
+          } else {
+            data[index][field] = input.value;
+          }
+          data[index].total = data[index].qty * data[index].price;
+        }
+      });
+      localStorage.setItem('inventoryData', JSON.stringify(data));
+      loadInventory();
+    }
+
+    loadInventory();
+
+    // Dark mode toggle
+    const toggle = document.getElementById('toggleDark');
+    toggle.addEventListener('change', () => {
+      document.body.classList.toggle('dark', toggle.checked);
+      localStorage.setItem('darkMode', toggle.checked);
+    });
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const dark = localStorage.getItem('darkMode') === 'true';
+      toggle.checked = dark;
+      if (dark) document.body.classList.add('dark');
     });
   </script>
 </body>
