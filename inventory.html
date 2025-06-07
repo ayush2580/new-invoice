@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inventory</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #4CAF50;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    table, th, td {
+      border: 1px solid #ddd;
+    }
+    th, td {
+      padding: 12px;
+      text-align: center;
+    }
+    th {
+      background-color: #4CAF50;
+      color: white;
+    }
+    form {
+      max-width: 500px;
+      margin: auto;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+    }
+    input, button {
+      padding: 10px;
+      margin-top: 10px;
+      width: 100%;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    button {
+      background-color: #4CAF50;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+  </style>
+</head>
+<body>
+  <h1>Inventory Management</h1>
+
+  <form id="inventoryForm">
+    <input type="text" id="itemName" placeholder="Product Name" required>
+    <input type="number" id="itemQty" placeholder="Quantity" required>
+    <input type="number" id="itemPrice" placeholder="Price" required>
+    <button type="submit">Add Item</button>
+  </form>
+
+  <table id="inventoryTable">
+    <thead>
+      <tr>
+        <th>Product</th>
+        <th>Quantity</th>
+        <th>Price</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    const form = document.getElementById('inventoryForm');
+    const tableBody = document.querySelector('#inventoryTable tbody');
+
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      const name = document.getElementById('itemName').value;
+      const qty = document.getElementById('itemQty').value;
+      const price = document.getElementById('itemPrice').value;
+
+      const row = document.createElement('tr');
+      row.innerHTML = `<td>${name}</td><td>${qty}</td><td>₹${price}</td>`;
+      tableBody.appendChild(row);
+
+      form.reset();
+    });
+  </script>
+</body>
+</html>
