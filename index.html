@@ -5,57 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Invoice Generator</title>
   <style>
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background-color: #f4f4f9;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-    h1 {
-      background-color: #4CAF50;
-      color: white;
-      padding: 20px;
-      margin: 0;
-      width: 100%;
-      text-align: center;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    button {
-      background-color: #4CAF50;
-      color: white;
-      border: none;
-      padding: 12px 20px;
-      margin: 10px;
-      cursor: pointer;
-      border-radius: 5px;
-      font-size: 16px;
-      transition: background 0.3s ease;
-    }
-    button:hover {
-      background-color: #45a049;
-    }
-    form {
-      background-color: white;
-      padding: 30px;
-      border-radius: 10px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-      max-width: 500px;
-      width: 100%;
-      margin: 30px auto;
-      display: flex;
-      flex-direction: column;
-    }
-    input, select {
-      padding: 12px;
-      margin-bottom: 15px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-      font-size: 16px;
-    }
+    body{
+      font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
+      background:#f4f4f9;margin:0;padding:0;display:flex;flex-direction:column;align-items:center}
+    h1{background:#4CAF50;color:#fff;padding:20px;margin:0;width:100%;text-align:center;box-shadow:0 2px 4px rgba(0,0,0,.1)}
+    button{background:#4CAF50;color:#fff;border:none;padding:12px 20px;margin:10px;cursor:pointer;border-radius:5px;font-size:16px;transition:background .3s}
+    button:hover{background:#45a049}
+    form{background:#fff;padding:30px;border-radius:10px;box-shadow:0 4px 8px rgba(0,0,0,.1);max-width:500px;width:100%;margin:30px auto;display:flex;flex-direction:column}
+    input,select{padding:12px;margin-bottom:15px;border:1px solid #ccc;border-radius:5px;font-size:16px}
+    .inline{display:flex;gap:10px}
   </style>
+
 </head>
 <body>
   <h1>Invoice Generator</h1>
@@ -67,7 +27,7 @@
 
   <form id="invoiceForm">
     <input type="text" id="customerName" placeholder="Customer Name" required>
-    <div style="display: flex; gap: 10px;">
+    <div class="inline">
       <select id="countryCode" required>
         <option value="91" selected>+91 (India)</option>
         <option value="1">+1 (USA)</option>
@@ -77,85 +37,93 @@
         <option value="49">+49 (Germany)</option>
         <option value="971">+971 (UAE)</option>
       </select>
-      <input type="text" id="phone" placeholder="Phone Number (No country code)" required>
+      <input type="text" id="phone" placeholder="Phone (No country code)" required>
     </div>
+
     <select id="product" required></select>
     <input type="number" id="qty" placeholder="Quantity" required>
-    <input type="number" id="rate" placeholder="Rate" required readonly>
+    <input type="number" id="rate" placeholder="₹ Rate" required>
     <button type="submit">Generate & Send Invoice</button>
   </form>
 
   <script>
-    const form = document.getElementById('invoiceForm');
-    const productSelect = document.getElementById('product');
-    const rateInput = document.getElementById('rate');
+    const productSelect=document.getElementById('product');
+    const rateInput=document.getElementById('rate');
 
-    function loadInventory() {
-      const inventory = JSON.parse(localStorage.getItem('inventoryData')) || [];
-      productSelect.innerHTML = '<option value="" disabled selected>Select Product</option>';
-      inventory.forEach((item, index) => {
-        const option = document.createElement('option');
-        option.value = index;
-        option.textContent = `${item.name} (${item.qty} pcs)`;
-        productSelect.appendChild(option);
+    function loadProducts(){
+      const inv=JSON.parse(localStorage.getItem('inventoryData'))||[];
+      productSelect.innerHTML='<option value="" disabled selected>Select Product</option>';
+      inv.forEach((item,i)=>{
+        if(item.qty>0){
+          const opt=document.createElement('option');
+          opt.value=i;
+          opt.textContent=`${item.name} - ₹${item.price} (stock: ${item.qty})`;
+          productSelect.appendChild(opt);
+        }
       });
     }
 
-    productSelect.addEventListener('change', () => {
-      const inventory = JSON.parse(localStorage.getItem('inventoryData')) || [];
-      const selected = inventory[productSelect.value];
-      if (selected) {
-        rateInput.value = selected.price;
-      }
+    productSelect.addEventListener('change',()=>{
+      const inv=JSON.parse(localStorage.getItem('inventoryData'))||[];
+      const idx=productSelect.value;
+      if(inv[idx]){rateInput.value=inv[idx].price;}
     });
 
-    form.addEventListener('submit', e => {
+    window.addEventListener('storage',loadProducts);
+    loadProducts();
+
+    const form=document.getElementById('invoiceForm');
+
+    form.addEventListener('submit',e=>{
       e.preventDefault();
-      const name = document.getElementById('customerName').value;
-      const code = document.getElementById('countryCode').value;
-      const phoneRaw = document.getElementById('phone').value.replace(/[^0-9]/g, '');
-      const phone = `${code}${phoneRaw}`;
-      const inventory = JSON.parse(localStorage.getItem('inventoryData')) || [];
-      const selectedIndex = productSelect.value;
-      const selected = inventory[selectedIndex];
-      const qty = parseInt(document.getElementById('qty').value);
-      const rate = parseFloat(rateInput.value);
-      const total = qty * rate;
+      const name=document.getElementById('customerName').value.trim();
+      const code=document.getElementById('countryCode').value;
+      const phoneRaw=document.getElementById('phone').value.replace(/[^0-9]/g,'');
+      const phone=`${code}${phoneRaw}`;
+      const inv=JSON.parse(localStorage.getItem('inventoryData'))||[];
+      const idx=productSelect.value;
+      if(idx==='')return alert('Select product');
+      const item=inv[idx];
+      const qty=parseInt(document.getElementById('qty').value);
+      const rate=parseFloat(rateInput.value);
+      if(qty>item.qty)return alert('Not enough stock');
+      const total=qty*rate;
 
-      if (!selected || qty > selected.qty) {
-        alert('Insufficient stock!');
-        return;
-      }
+      let invoiceCounter=parseInt(localStorage.getItem('invoiceCounter')||'1');
+      const invoiceNo=`INV-${invoiceCounter.toString().padStart(5,'0')}`;
+      localStorage.setItem('invoiceCounter',invoiceCounter+1);
 
-      selected.qty -= qty;
-      inventory[selectedIndex] = selected;
-      localStorage.setItem('inventoryData', JSON.stringify(inventory));
+      item.qty-=qty;
+      item.total=item.qty * item.price;
+      inv[idx]=item;
+      localStorage.setItem('inventoryData',JSON.stringify(inv));
 
-      const txn = {
-        date: new Date().toLocaleString(),
-        customer: name,
-        product: selected.name,
-        qty: qty,
-        rate: rate,
-        total: total
-      };
-      const transactions = JSON.parse(localStorage.getItem('transactionsData')) || [];
-      transactions.push(txn);
-      localStorage.setItem('transactionsData', JSON.stringify(transactions));
+      const txn={invoiceNo,date:new Date().toLocaleString(),customer:name,phone,product:item.name,qty,rate,total};
+      const txns=JSON.parse(localStorage.getItem('transactionsData'))||[];txns.push(txn);localStorage.setItem('transactionsData',JSON.stringify(txns));
 
-      let revenue = parseFloat(localStorage.getItem('totalRevenue')) || 0;
-      revenue += total;
-      localStorage.setItem('totalRevenue', revenue);
+      const customers=JSON.parse(localStorage.getItem('customersData'))||[];
+      if(!customers.find(c=>c.phone===phone))customers.push({name,phone});
+      localStorage.setItem('customersData',JSON.stringify(customers));
 
-      const message = `Hi ${name}, thanks for your purchase.%0A%0AProduct: ${selected.name}%0AQuantity: ${qty}%0ARate: ₹${rate}%0ATotal: ₹${total}%0A%0AThank you for shopping with us!`;
-      const whatsappUrl = `https://wa.me/${phone}?text=${message}`;
-      window.open(whatsappUrl, '_blank');
-      form.reset();
-      loadInventory();
+      let revenue=parseFloat(localStorage.getItem('totalRevenue'))||0;revenue+=total;localStorage.setItem('totalRevenue',revenue);
+
+      const msg=`Invoice No: ${invoiceNo}%0AProduct: ${item.name}%0AQty: ${qty}%0ARate: ₹${rate}%0ATotal: ₹${total}%0A%0AThank you, ${name}!`;
+      window.open(`https://wa.me/${phone}?text=${msg}`,'_blank');
+
+      form.reset();loadProducts();
+    });
+        // Dark mode toggle
+    const toggle = document.getElementById('toggleDark');
+    toggle.addEventListener('change', () => {
+      document.body.classList.toggle('dark', toggle.checked);
+      localStorage.setItem('darkMode', toggle.checked);
     });
 
-    window.addEventListener('storage', loadInventory);
-    loadInventory();
+    window.addEventListener('DOMContentLoaded', () => {
+      const dark = localStorage.getItem('darkMode') === 'true';
+      toggle.checked = dark;
+      if (dark) document.body.classList.add('dark');
+    });
   </script>
 </body>
 </html>
